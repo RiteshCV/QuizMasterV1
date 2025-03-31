@@ -1,0 +1,263 @@
+openapi: 3.0.0
+info:
+  title: Quiz Master API
+  version: 1.0.0
+  description: API for the Quiz Master application.
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+paths:
+  /register:
+    post:
+      summary: User registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "201":
+          description: User successfully registered
+        "400":
+          description: Invalid input or user already exists
+
+  /subjects:
+    get:
+      summary: Retrieve all subjects
+      responses:
+        "200":
+          description: List of subjects retrieved successfully
+
+  /api/subjects/add:
+    post:
+      summary: Add a new subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_name:
+                  type: string
+      responses:
+        "201":
+          description: Subject added successfully
+        "400":
+          description: Invalid input or subject already exists
+
+  /api/subjects/update:
+    post:
+      summary: Update an existing subject name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                old_subject_name:
+                  type: string
+                new_subject_name:
+                  type: string
+      responses:
+        "200":
+          description: Subject updated successfully
+        "404":
+          description: Subject not found
+
+  /api/subjects/remove:
+    post:
+      summary: Delete a subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_name:
+                  type: string
+      responses:
+        "200":
+          description: Subject deleted successfully
+        "404":
+          description: Subject not found
+
+  /subjects/{subject_name}:
+    get:
+      summary: Retrieve chapters under a subject
+      parameters:
+        - name: subject_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of chapters retrieved successfully
+        "404":
+          description: Subject not found
+
+  /api/chapters/add:
+    post:
+      summary: Add a new chapter to a subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_name:
+                  type: string
+                chapter_name:
+                  type: string
+      responses:
+        "201":
+          description: Chapter added successfully
+        "400":
+          description: Invalid input or chapter already exists
+
+  /api/chapters/update:
+    post:
+      summary: Update an existing chapter name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_name:
+                  type: string
+                old_chapter_name:
+                  type: string
+                new_chapter_name:
+                  type: string
+      responses:
+        "200":
+          description: Chapter updated successfully
+        "404":
+          description: Chapter not found
+
+  /api/chapters/remove:
+    post:
+      summary: Delete a chapter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_name:
+                  type: string
+                chapter_name:
+                  type: string
+      responses:
+        "200":
+          description: Chapter deleted successfully
+        "404":
+          description: Chapter not found
+
+  /subjects/{subject_name}/{chapter_name}:
+    get:
+      summary: Retrieve quizzes under a chapter
+      parameters:
+        - name: subject_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: chapter_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of quizzes retrieved successfully
+        "404":
+          description: Chapter not found
+
+  /api/quizzes/create:
+    post:
+      summary: Create a new quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chapter_name:
+                  type: string
+                quiz_title:
+                  type: string
+      responses:
+        "201":
+          description: Quiz created successfully
+        "400":
+          description: Invalid input or quiz already exists
+
+  /api/quizzes/update:
+    post:
+      summary: Update an existing quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quiz_id:
+                  type: integer
+                new_quiz_title:
+                  type: string
+      responses:
+        "200":
+          description: Quiz updated successfully
+        "404":
+          description: Quiz not found
+
+  /api/quizzes/delete:
+    post:
+      summary: Delete a quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quiz_id:
+                  type: integer
+      responses:
+        "200":
+          description: Quiz deleted successfully
+        "404":
+          description: Quiz not found
+
+  /quiz/{quiz_id}/history:
+    get:
+      summary: Retrieve quiz attempt history
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quiz history retrieved successfully
+        "404":
+          description: Quiz not found

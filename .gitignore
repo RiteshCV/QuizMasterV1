@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+venv/
+
+# Byte-compiled and cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE and editor settings
+*.idea/
+
+# Flask-specific
+instance/
+database.db
+
+# Logs and temp files
+*.log

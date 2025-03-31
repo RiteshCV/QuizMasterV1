@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}ExamPrep Hub - Quiz {{ quiz.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/subjects">Subjects</a></li>
+            <li class="breadcrumb-item"><a href="/subjects/{{ subject_name }}">{{ subject_name }}</a></li>
+            <li class="breadcrumb-item"><a href="/subjects/{{ subject_name }}/{{ chapter_name }}">{{ chapter_name }}</a></li>
+            <li class="breadcrumb-item active">Quiz {{ quiz.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-9">
+            <div class="quiz-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Quiz {{ quiz.id }}</h2>
+                    <div class="timer" id="timer">
+                        <span id="minutes">{{ quiz.duration }}</span>:<span id="seconds">00</span>
+                    </div>
+                </div>
+
+                <form id="quizForm" onsubmit="submitQuiz(event)">
+                    <div id="questionContainer" class="question-container">
+                        {% for question in questions %}
+                        <div class="question" id="question{{ question.id }}" style="display: {% if loop.first %}block{% else %}none{% endif %};">
+                            <h3 class="mb-4">Question {{ loop.index }}</h3>
+                            <p class="question-text mb-4">{{ question.question }}</p>
+
+                            <div class="options">
+                                {% for option in question.options %}
+                                <div class="option mb-3">
+                                    <input type="radio"
+                                           name="question{{ question.id }}"
+                                           id="q{{ question.id }}option{{ loop.index }}"
+                                           value="{{ loop.index0 }}"
+                                           class="option-input">
+                                    <label for="q{{ question.id }}option{{ loop.index }}"
+                                           class="option-label">
+                                        {{ option }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="navigation-buttons mt-4">
+                        <button type="button" id="prevBtn" class="btn btn-secondary" onclick="previousQuestion()" disabled>Previous</button>
+                        <button type="button" id="markReviewBtn" class="btn btn-warning" onclick="markForReview()">Mark for Review</button>
+                        <button type="button" id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">Next</button>
+                        <button type="submit" id="submitBtn" class="btn btn-success" style="display: none;">Submit Quiz</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="overview-panel">
+                <h3>Question Overview</h3>
+                <div class="question-grid">
+                    {% for question in questions %}
+                    <div class="question-status"
+                         id="status{{ question.id }}"
+                         onclick="jumpToQuestion({{ loop.index0 }})"
+                         data-status="{% if loop.first %}current{% else %}not-visited{% endif %}">
+                        {{ loop.index }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="status-legend mt-4">
+                    <div class="legend-item">
+                        <span class="status-dot not-visited"></span>
+                        <span>Not Visited</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="status-dot current"></span>
+                        <span>Current</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="status-dot answered"></span>
+                        <span>Answered</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="status-dot review"></span>
+                        <span>Marked for Review</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentQuestion = 0;
+const questions = {{ questions|tojson|safe }};
+const totalQuestions = questions.length;
+let timer;
+let timeLeft = {{ quiz.duration }} * 60;
+
+function startTimer() {
+    timer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            autoSubmitQuiz();
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+    document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+}
+
+function showQuestion(index) {
+    document.querySelectorAll('.question').forEach(q => q.style.display = 'none');
+    document.getElementById(`question${questions[index].id}`).style.display = 'block';
+    document.getElementById('prevBtn').disabled = index === 0;
+    document.getElementById('nextBtn').style.display = index === totalQuestions - 1 ? 'none' : 'inline-block';
+    document.getElementById('submitBtn').style.display = index === totalQuestions - 1 ? 'inline-block' : 'none';
+    updateQuestionStatus(index, 'current');
+    currentQuestion = index;
+}
+
+function nextQuestion() {
+    if (currentQuestion < totalQuestions - 1) {
+        const currentStatus = document.getElementById(`status${questions[currentQuestion].id}`).dataset.status;
+        if (currentStatus === 'current') {
+            updateQuestionStatus(currentQuestion, 'not-visited');
+        }
+        showQuestion(currentQuestion + 1);
+    }
+}
+
+function previousQuestion() {
+    if (currentQuestion > 0) {
+        const currentStatus = document.getElementById(`status${questions[currentQuestion].id}`).dataset.status;
+        if (currentStatus === 'current') {
+            updateQuestionStatus(currentQuestion, 'not-visited');
+        }
+        showQuestion(currentQuestion - 1);
+    }
+}
+
+function markForReview() {
+    updateQuestionStatus(currentQuestion, 'review');
+}
+
+function jumpToQuestion(index) {
+    const currentStatus = document.getElementById(`status${questions[currentQuestion].id}`).dataset.status;
+    if (currentStatus === 'current') {
+        updateQuestionStatus(currentQuestion, 'not-visited');
+    }
+    showQuestion(index);
+}
+
+function updateQuestionStatus(index, status) {
+    const statusElement = document.getElementById(`status${questions[index].id}`);
+    statusElement.dataset.status = status;
+}
+
+function autoSubmitQuiz() {
+    document.getElementById('quizForm').submit();
+}
+
+function submitQuiz(event) {
+    event.preventDefault();
+    clearInterval(timer);
+    const answers = {};
+    questions.forEach(question => {
+        const selectedOption = document.querySelector(`input[name="question${question.id}"]:checked`);
+        answers[question.id] = selectedOption ? parseInt(selectedOption.value) : null;
+    });
+    console.log('Submitting answers:', answers);
+
+    const quizId = '{{ quiz.id }}';
+    console.log(quizId)
+    fetch('/api/quizzes/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quizId: quizId, answers: answers })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => { throw errorData });
+        }
+        return response.json();
+    })
+    .then(data => {
+        window.location.href = `/subjects/{{ subject_name }}/{{ chapter_name }}`;
+    })
+    .catch(error => {
+        console.error('Error submitting quiz:', error);
+        alert('Error submitting quiz: ' + (error.error || 'Unknown error'));
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    showQuestion(0);
+    startTimer();
+    document.querySelectorAll('.option-input').forEach(input => {
+        input.addEventListener('change', () => {
+            const questionId = parseInt(input.name.replace('question', ''));
+            const questionIndex = questions.findIndex(q => q.id === questionId);
+            updateQuestionStatus(questionIndex, 'answered');
+        });
+    });
+});
+
+window.addEventListener('beforeunload', (e) => {
+    e.preventDefault();
+    e.returnValue = '';
+});
+</script>
+{% endblock %}

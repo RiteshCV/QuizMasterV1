@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}ExamPrep Hub - Your Path to Success{% endblock %}
+
+{% block content %}
+<div class="hero-section bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="display-4 fw-bold">Master Your Exams</h1>
+                <p class="lead">Comprehensive exam preparation resources for multiple courses. Start your journey to academic excellence today.</p>
+                <a href="/register" class="btn btn-light btn-lg mt-3">Get Started</a>
+            </div>
+            <div class="col-md-6">
+                <img src="{{ url_for('static', filename='images/study.svg') }}" alt="Students studying" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<section id="features" class="py-10">
+    <div class="container">
+        <h2 class="text-center mb-5">Why Choose ExamPrep Hub?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Multiple Courses</h5>
+                        <p class="card-text">Access study materials for various subjects all in one place.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Practice Tests</h5>
+                        <p class="card-text">Test your knowledge with our comprehensive practice exams.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Progress Tracking</h5>
+                        <p class="card-text">Monitor your improvement with detailed performance analytics.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

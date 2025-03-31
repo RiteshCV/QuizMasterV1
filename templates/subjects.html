@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}ExamPrep Hub - Subjects{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h1>Subjects</h1>
+        {% if is_admin %}
+            <div id="editButtons" class="d-flex justify-content-between align-items-end">
+                <button id="cancelButton" class="btn btn-secondary me-2" style="display: none;" onclick="cancelAllEdits()">Cancel</button>
+                <button id="editButton" class="btn btn-primary" onclick="toggleEditMode()">
+                    <span id="editButtonText">Edit</span>
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="row g-4 mb-5">
+        {% for subject in subjects %}
+            <div class="col-md-6">
+                <div class="subject-card" onclick="handleSubjectClick('{{ subject }}', event)">
+                    {% if is_admin %}
+                        <button class="remove-btn edit-control" title="Remove Subject" onclick="event.stopPropagation(); removeSubject('{{ subject }}')" style="display: none;">-</button>
+                        <input type="text" class="subject-name-input" value="{{ subject }}" style="display: none;" onblur="updateSubjectName('{{ subject }}', this.value)">
+                    {% endif %}
+                    <h3 class="subject-name">{{ subject }}</h3>
+                </div>
+            </div>
+        {% endfor %}
+        {% if is_admin %}
+            <div class="col-md-6">
+                <div class="add-subject-card edit-control" title="Add New Subject" onclick="addNewSubject()" style="display: none;">
+                    <span>+</span>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm mb-5">
+        <div class="card-body">
+            <h2 class="card-title h4 mb-4">Statistics</h2>
+            {% if is_admin %}
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3">
+                            <h3 class="h5 mb-3">User Activity</h3>
+                            <canvas id="userActivityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3">
+                            <h3 class="h5 mb-3">Subject Distribution</h3>
+                            <canvas id="subjectDistributionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3">
+                            <h3 class="h5 mb-3">Quiz Completion Rates</h3>
+                            <canvas id="quizCompletionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3">
+                            <h3 class="h5 mb-3">Monthly User Growth</h3>
+                            <canvas id="userGrowthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3">
+                            <h3 class="h5 mb-3">Performance by Subject</h3>
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3">
+                            <h3 class="h5 mb-3">Study Progress</h3>
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="border rounded p-3">
+                            <h3 class="h5 mb-3">Weekly Activity</h3>
+                            <canvas id="weeklyActivityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+<script>
+let isEditMode = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    {% if is_admin %}
+        new Chart(document.getElementById('userActivityChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Active Users',
+                    data: [1200, 1350, 1500, 1800, 2100, 2400],
+                    borderColor: '#0d6efd',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('subjectDistributionChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'English'],
+                datasets: [{
+                    data: [30, 20, 15, 12, 15, 8],
+                    backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('quizCompletionChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'English'],
+                datasets: [{
+                    label: 'Completion Rate (%)',
+                    data: [85, 72, 68, 76, 82, 70],
+                    backgroundColor: '#198754'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('userGrowthChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'New Users',
+                    data: [100, 150, 200, 180, 220, 250],
+                    borderColor: '#0dcaf0',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    {% else %}
+        new Chart(document.getElementById('performanceChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'English'],
+                datasets: [{
+                    label: 'Your Score',
+                    data: [85, 72, 68, 76, 82, 70],
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.2)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('progressChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'In Progress', 'Not Started'],
+                datasets: [{
+                    data: [60, 30, 10],
+                    backgroundColor: ['#198754', '#ffc107', '#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('weeklyActivityChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                datasets: [{
+                    label: 'Study Hours',
+                    data: [2.5, 3, 4, 2, 3.5, 1.5, 1],
+                    backgroundColor: '#0d6efd'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    {% endif %}
+});
+
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    const editControls = document.querySelectorAll('.edit-control');
+    const editButtonText = document.getElementById('editButtonText');
+    const cancelButton = document.getElementById('cancelButton');
+
+    editControls.forEach(control => {
+        control.style.display = isEditMode ? 'flex' : 'none';
+    });
+
+    editButtonText.textContent = isEditMode ? 'Done' : 'Edit';
+    cancelButton.style.display = isEditMode ? 'flex' : 'none';
+}
+
+function handleSubjectClick(subject, event) {
+    if (!isEditMode) {
+        window.location.href = `/subjects/${subject}`;
+        return;
+    }
+
+    const card = event.currentTarget;
+    const nameElement = card.querySelector('.subject-name');
+    const inputElement = card.querySelector('.subject-name-input');
+
+    nameElement.style.display = 'none';
+    inputElement.style.display = 'block';
+    inputElement.value = subject;
+    inputElement.focus();
+}
+
+async function updateSubjectName(oldName, newName) {
+    const inputElement = event.target;
+    const card = inputElement.closest('.subject-card');
+    const nameElement = card.querySelector('.subject-name');
+
+    const response = await fetch('/api/subjects/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ oldName, newName })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+        console.log('Subject updated successfully:', result.message);
+        nameElement.textContent = newName;
+        nameElement.style.display = 'block';
+        inputElement.style.display = 'none';
+    } else {
+        alert('Error updating subject name: ' + result.error);
+    }
+}
+
+function cancelAllEdits() {
+    const subjectCards = document.querySelectorAll('.subject-card');
+
+    subjectCards.forEach(card => {
+        const nameElement = card.querySelector('.subject-name');
+        const inputElement = card.querySelector('.subject-name-input');
+
+        if (inputElement) {
+            inputElement.style.display = 'none';
+            nameElement.style.display = 'block';
+        }
+    });
+
+    toggleEditMode();
+}
+
+async function removeSubject(subjectName) {
+    const confirmation = confirm(`Are you sure you want to remove the subject: ${subjectName}?`);
+    if (confirmation) {
+        const response = await fetch('/api/subjects/remove', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({subject: subjectName})
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log('Subject removed successfully:', result.message);
+
+            const subjectCards = document.querySelectorAll('.subject-card');
+            subjectCards.forEach(card => {
+                const subjectNameElement = card.querySelector('.subject-name');
+                if (subjectNameElement && subjectNameElement.textContent === subjectName) {
+                    card.remove();
+                }
+            });
+        } else {
+            alert('Error removing subject: ' + result.error);
+        }
+    }
+}
+
+async function addNewSubject() {
+    const newSubject = prompt('Enter new subject name:');
+    const response = await fetch('/api/subjects/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({newSubject})
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+        console.log('Subject added successfully:', result.message);
+        const subjectsContainer = document.querySelector('.row');
+        const newSubjectHtml = `
+            <div class="col-md-6">
+                <div class="subject-card" onclick="handleSubjectClick('${newSubject}', event)">
+                    <button class="remove-btn edit-control" title="Remove Subject" onclick="event.stopPropagation(); removeSubject('${newSubject}')">-</button>
+                    <input type="text" class="subject-name-input" value="${newSubject}" style="display: none;" onblur="updateSubjectName('${newSubject}', this.value)">
+                    <h3 class="subject-name">${newSubject}</h3>
+                </div>
+            </div>
+        `;
+        const addButton = document.querySelector('.add-subject-card').closest('.col-md-6');
+        addButton.insertAdjacentHTML('beforebegin', newSubjectHtml);
+    } else {
+        alert('Error adding subject: ' + result.error);
+    }
+}
+</script>
+{% endblock %}

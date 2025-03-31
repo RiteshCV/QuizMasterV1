@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}ExamPrep Hub - {{ subject_name }} Chapters{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/subjects">Subjects</a></li>
+            <li class="breadcrumb-item active">{{ subject_name }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h1>{{ subject_name }} Chapters</h1>
+        {% if is_admin %}
+            <div id="editButtons" class="d-flex justify-content-between align-items-end">
+                <button id="cancelButton" class="btn btn-secondary me-2" style="display: none;" onclick="cancelAllEdits()">Cancel</button>
+                <button id="editButton" class="btn btn-primary" onclick="toggleEditMode()">
+                    <span id="editButtonText">Edit</span>
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            {% if chapters %}
+                {% for chapter in chapters %}
+                    <div class="chapter-card mb-4" onclick="handleChapterClick('{{ chapter }}', event)">
+                        {% if is_admin %}
+                            <button class="remove-btn edit-control" title="Remove Chapter" onclick="event.stopPropagation(); removeChapter('{{ chapter }}')" style="display: none;">-</button>
+                            <input type="text" class="chapter-name-input" value="{{ chapter }}" style="display: none;" onblur="updateChapterName('{{ chapter }}', this.value)">
+                        {% endif %}
+                        <h3 class="chapter-name">Chapter {{ loop.index }}: {{ chapter }}</h3>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No chapters available for this subject.</p>
+            {% endif %}
+
+            {% if is_admin %}
+                <div class="add-chapter-card edit-control mb-4" onclick="addNewChapter()" style="display: none;">
+                    <span>+</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+let isEditMode = false;
+
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    const editControls = document.querySelectorAll('.edit-control');
+    const editButtonText = document.getElementById('editButtonText');
+    const cancelButton = document.getElementById('cancelButton');
+
+    editControls.forEach(control => {
+        control.style.display = isEditMode ? 'flex' : 'none';
+    });
+
+    editButtonText.textContent = isEditMode ? 'Done' : 'Edit';
+    cancelButton.style.display = isEditMode ? 'flex' : 'none';
+}
+
+function handleChapterClick(chapter, event) {
+    if (!isEditMode) {
+        window.location.href = `/subjects/{{ subject_name }}/${chapter}`;
+        return;
+    }
+
+    const card = event.currentTarget;
+    const nameElement = card.querySelector('.chapter-name');
+    const inputElement = card.querySelector('.chapter-name-input');
+
+    nameElement.style.display = 'none';
+    inputElement.style.display = 'block';
+    inputElement.value = chapter;
+    inputElement.focus();
+}
+
+function updateChapterName(oldName, newName) {
+    const inputElement = event.target;
+    const card = inputElement.closest('.chapter-card');
+    const nameElement = card.querySelector('.chapter-name');
+    const chapterNumber = nameElement.textContent.split(':')[0];
+
+    fetch('/api/chapters/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldName, newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            console.log(`Updated chapter name from ${oldName} to ${newName}`);
+            nameElement.textContent = `${chapterNumber}: ${newName}`;
+            nameElement.style.display = 'block';
+            inputElement.style.display = 'none';
+        }
+    })
+    .catch(error => console.error('Error updating chapter:', error));
+}
+
+function cancelAllEdits() {
+    const chapterCards = document.querySelectorAll('.chapter-card');
+
+    chapterCards.forEach(card => {
+        const nameElement = card.querySelector('.chapter-name');
+        const inputElement = card.querySelector('.chapter-name-input');
+
+        if (inputElement) {
+            inputElement.style.display = 'none';
+            nameElement.style.display = 'block';
+        }
+    });
+
+    toggleEditMode();
+}
+
+function removeChapter(chapter) {
+    if (confirm(`Are you sure you want to remove ${chapter}?`)) {
+        fetch('/api/chapters/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chapter })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                console.log(`Removed chapter: ${chapter}`);
+                const chapterCards = document.querySelectorAll('.chapter-card');
+                chapterCards.forEach(card => {
+                    const nameElement = card.querySelector('.chapter-name');
+                    if (nameElement.textContent.includes(chapter)) {
+                        card.remove();
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error removing chapter:', error));
+    }
+}
+
+function addNewChapter() {
+    const newChapter = prompt('Enter new chapter name:');
+    if (newChapter) {
+        fetch('/api/chapters/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subjectName: "{{ subject_name }}", newChapter: newChapter })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                console.log(`Added new chapter: ${newChapter}`);
+                const chaptersContainer = document.querySelector('.col-md-8');
+                const existingChapters = document.querySelectorAll('.chapter-card').length;
+                const chapterNumber = existingChapters + 1;
+
+                const newChapterHtml = `
+                    <div class="chapter-card mb-4" onclick="handleChapterClick('${newChapter}', event)">
+                        <button class="remove-btn edit-control" title="Remove Chapter" onclick="event.stopPropagation(); removeChapter('${newChapter}')" style="display: flex;">-</button>
+                        <input type="text" class="chapter-name-input" value="${newChapter}" style="display: none;" onblur="updateChapterName('${newChapter}', this.value)">
+                        <h3 class="chapter-name">Chapter ${chapterNumber}: ${newChapter}</h3>
+                    </div>
+                `;
+
+                const addButton = document.querySelector('.add-chapter-card');
+                if (addButton) {
+                    addButton.insertAdjacentHTML('beforebegin', newChapterHtml);
+                } else {
+                    chaptersContainer.insertAdjacentHTML('beforeend', newChapterHtml);
+                }
+            }
+        })
+        .catch(error => console.error('Error adding new chapter:', error));
+    }
+}
+</script>
+{% endblock %}

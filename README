@@ -1,0 +1,20 @@
+# Quiz Master - V1
+
+## Installation and Setup
+### Prerequisites
+- Python 3.x installed
+- pip (Python package manager)
+
+### Steps to Run
+1. Extract all content** from the ZIP file.
+2. Go to the extracted directory.
+3. Initialize the database:
+        python init_db.py
+4. Run the application:
+        python app.py
+5. Click on the link that appears in the terminal to open the app in your browser.
+{
+Default Admin Credentials
+Email: admin@example.com
+Password: qwerty
+}
